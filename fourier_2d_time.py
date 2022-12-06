@@ -99,10 +99,7 @@ class FNO2d(nn.Module):
         self.w1 = nn.Conv2d(self.width, self.width, 1)
         self.w2 = nn.Conv2d(self.width, self.width, 1)
         self.w3 = nn.Conv2d(self.width, self.width, 1)
-        self.bn0 = torch.nn.BatchNorm2d(self.width)
-        self.bn1 = torch.nn.BatchNorm2d(self.width)
-        self.bn2 = torch.nn.BatchNorm2d(self.width)
-        self.bn3 = torch.nn.BatchNorm2d(self.width)
+        self.norm = nn.InstanceNorm2d(self.width)
 
         self.fc1 = nn.Linear(self.width, 128)
         self.fc2 = nn.Linear(128, 1)
@@ -114,22 +111,23 @@ class FNO2d(nn.Module):
         x = x.permute(0, 3, 1, 2)
         # x = F.pad(x, [0,self.padding, 0,self.padding]) # pad the domain if input is non-periodic
 
-        x1 = self.conv0(x)
+
+        x1 = self.norm(self.conv0(self.norm(x)))
         x2 = self.w0(x)
         x = x1 + x2
         x = F.gelu(x)
 
-        x1 = self.conv1(x)
+        x1 = self.norm(self.conv1(self.norm(x)))
         x2 = self.w1(x)
         x = x1 + x2
         x = F.gelu(x)
 
-        x1 = self.conv2(x)
+        x1 = self.norm(self.conv2(self.norm(x)))
         x2 = self.w2(x)
         x = x1 + x2
         x = F.gelu(x)
 
-        x1 = self.conv3(x)
+        x1 = self.norm(self.conv3(self.norm(x)))
         x2 = self.w3(x)
         x = x1 + x2
 
@@ -152,8 +150,10 @@ class FNO2d(nn.Module):
 # configs
 ################################################################
 
-TRAIN_PATH = 'data/ns_data_V100_N1000_T50_1.mat'
-TEST_PATH = 'data/ns_data_V100_N1000_T50_2.mat'
+# TRAIN_PATH = 'data/ns_data_V100_N1000_T50_1.mat'
+# TEST_PATH = 'data/ns_data_V100_N1000_T50_2.mat'
+TRAIN_PATH = '/home/wumming/Documents/GNN-PDE/graph-pde/data/ns_data_V1000_N1000_train_1.mat'
+TEST_PATH = '/home/wumming/Documents/GNN-PDE/graph-pde/data/ns_data_V1000_N1000_train_2.mat'
 
 ntrain = 1000
 ntest = 200
