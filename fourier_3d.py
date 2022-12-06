@@ -5,25 +5,12 @@ which takes the 2D spatial + 1D temporal equation directly as a 3D problem
 """
 
 
-import torch
-import numpy as np
-import torch.nn as nn
 import torch.nn.functional as F
-
-import matplotlib.pyplot as plt
 from utilities3 import *
-
-import operator
-from functools import reduce
-from functools import partial
-
 from timeit import default_timer
-
-from Adam import Adam
 
 torch.manual_seed(0)
 np.random.seed(0)
-
 
 ################################################################
 # 3d fourier layers
@@ -241,7 +228,7 @@ model = FNO3d(modes, modes, modes, width).cuda()
 # model = torch.load('model/ns_fourier_V100_N1000_ep100_m8_w20')
 
 print(count_params(model))
-optimizer = Adam(model.parameters(), lr=learning_rate, weight_decay=1e-4)
+optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate, weight_decay=1e-4)
 scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=scheduler_step, gamma=scheduler_gamma)
 
 

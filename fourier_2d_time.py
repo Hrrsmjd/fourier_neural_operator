@@ -4,26 +4,12 @@ This file is the Fourier Neural Operator for 2D problem such as the Navier-Stoke
 which uses a recurrent structure to propagates in time.
 """
 
-
-import torch
-import numpy as np
-import torch.nn as nn
 import torch.nn.functional as F
-
-import matplotlib.pyplot as plt
 from utilities3 import *
-
-import operator
-from functools import reduce
-from functools import partial
-
 from timeit import default_timer
-
-from Adam import Adam
 
 torch.manual_seed(0)
 np.random.seed(0)
-
 
 ################################################################
 # fourier layer
@@ -150,10 +136,8 @@ class FNO2d(nn.Module):
 # configs
 ################################################################
 
-# TRAIN_PATH = 'data/ns_data_V100_N1000_T50_1.mat'
-# TEST_PATH = 'data/ns_data_V100_N1000_T50_2.mat'
-TRAIN_PATH = '/home/wumming/Documents/GNN-PDE/graph-pde/data/ns_data_V1000_N1000_train_1.mat'
-TEST_PATH = '/home/wumming/Documents/GNN-PDE/graph-pde/data/ns_data_V1000_N1000_train_2.mat'
+TRAIN_PATH = 'data/ns_data_V100_N1000_T50_1.mat'
+TEST_PATH = 'data/ns_data_V100_N1000_T50_2.mat'
 
 ntrain = 1000
 ntest = 200
@@ -215,7 +199,7 @@ model = FNO2d(modes, modes, width).cuda()
 # model = torch.load('model/ns_fourier_V100_N1000_ep100_m8_w20')
 
 print(count_params(model))
-optimizer = Adam(model.parameters(), lr=learning_rate, weight_decay=1e-4)
+optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate, weight_decay=1e-4)
 scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=scheduler_step, gamma=scheduler_gamma)
 
 myloss = LpLoss(size_average=False)

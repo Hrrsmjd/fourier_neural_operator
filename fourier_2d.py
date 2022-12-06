@@ -3,26 +3,12 @@
 This file is the Fourier Neural Operator for 2D problem such as the Darcy Flow discussed in Section 5.2 in the [paper](https://arxiv.org/pdf/2010.08895.pdf).
 """
 
-import numpy as np
-import torch
-import torch.nn as nn
 import torch.nn.functional as F
-from torch.nn.parameter import Parameter
-
-import matplotlib.pyplot as plt
-
-import operator
-from functools import reduce
-from functools import partial
-
 from timeit import default_timer
 from utilities3 import *
 
-from Adam import Adam
-
 torch.manual_seed(0)
 np.random.seed(0)
-
 
 ################################################################
 # fourier layer
@@ -194,7 +180,7 @@ test_loader = torch.utils.data.DataLoader(torch.utils.data.TensorDataset(x_test,
 model = FNO2d(modes, modes, width).cuda()
 print(count_params(model))
 
-optimizer = Adam(model.parameters(), lr=learning_rate, weight_decay=1e-4)
+optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate, weight_decay=1e-4)
 scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=step_size, gamma=gamma)
 
 myloss = LpLoss(size_average=False)

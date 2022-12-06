@@ -3,20 +3,9 @@
 This file is the Fourier Neural Operator for 1D problem such as the (time-independent) Burgers equation discussed in Section 5.1 in the [paper](https://arxiv.org/pdf/2010.08895.pdf).
 """
 
-import numpy as np
-import torch
-import torch.nn as nn
 import torch.nn.functional as F
-from torch.nn.parameter import Parameter
-import matplotlib.pyplot as plt
-
-import operator
-from functools import reduce
-from functools import partial
 from timeit import default_timer
 from utilities3 import *
-
-from Adam import Adam
 
 torch.manual_seed(0)
 np.random.seed(0)
@@ -151,7 +140,6 @@ gamma = 0.5
 modes = 16
 width = 64
 
-
 ################################################################
 # read data
 ################################################################
@@ -179,7 +167,7 @@ print(count_params(model))
 ################################################################
 # training and evaluation
 ################################################################
-optimizer = Adam(model.parameters(), lr=learning_rate, weight_decay=1e-4)
+optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate, weight_decay=1e-4)
 scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=step_size, gamma=gamma)
 
 myloss = LpLoss(size_average=False)
