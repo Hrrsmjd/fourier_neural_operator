@@ -12,21 +12,36 @@ It follows from the previous works:
 - [(MGKN) Multipole Graph Neural Operator for Parametric Partial Differential Equations](https://arxiv.org/abs/2006.09535)
 
 
+Follow-ups:
+- [(PINO) Physics-Informed Neural Operator for Learning Partial Differential Equations](https://arxiv.org/pdf/2111.03794.pdf)
+- [(Geo-FNO) Fourier Neural Operator with Learned Deformations for PDEs on General Geometries](https://arxiv.org/pdf/2207.05209.pdf)
+
+Examples of applications:
+- [Weather Forecast](https://arxiv.org/pdf/2202.11214.pdf)
+- [Carbon capture and storage](https://arxiv.org/pdf/2210.17051.pdf)
+
 ## Requirements
 - We have updated the files to support [PyTorch 1.8.0](https://pytorch.org/). 
 Pytorch 1.8.0 starts to support complex numbers and it has a new implementation of FFT. 
 As a result the code is about 30% faster.
 - Previous version for [PyTorch 1.6.0](https://pytorch.org/) is avaiable at `FNO-torch.1.6`.
 
+## Major Updates:
+- Dec 2022: add InstanceNorm layers for fourier_2d_time.
+- Aug 2021: use GeLU instead of ReLU.
+- Jan 2021: remove unnecessary BatchNorm layers.
+
 ## Files
 The code is in the form of simple scripts. Each script shall be stand-alone and directly runnable.
 
 - `fourier_1d.py` is the Fourier Neural Operator for 1D problem such as the (time-independent) Burgers equation discussed in Section 5.1 in the [paper](https://arxiv.org/pdf/2010.08895.pdf).
+The neural operator maps the solution function from time 0 to time 1.
 - `fourier_2d.py` is the Fourier Neural Operator for 2D problem such as the Darcy Flow discussed in Section 5.2 in the [paper](https://arxiv.org/pdf/2010.08895.pdf).
+The neural operator maps from the coefficient function to the solution function.
 - `fourier_2d_time.py` is the Fourier Neural Operator for 2D problem such as the Navier-Stokes equation discussed in Section 5.3 in the [paper](https://arxiv.org/pdf/2010.08895.pdf), 
-which uses a recurrent structure to propagates in time.
+which uses a recurrent structure to propagates in time. The neural operator maps the solution function from time `[t-10:t]` to time `t+1`.
 - `fourier_3d.py` is the Fourier Neural Operator for 3D problem such as the Navier-Stokes equation discussed in Section 5.3 in the [paper](https://arxiv.org/pdf/2010.08895.pdf),
-which takes the 2D spatial + 1D temporal equation directly as a 3D problem
+which takes the 2D spatial + 1D temporal equation directly as a 3D problem. The neural operator maps the solution function from time `[1:10]` to time `[11:T]`.
 - The lowrank methods are similar. These scripts are the Lowrank neural operators for the corresponding settings.
 - `data_generation` are the conventional solvers we used to generate the datasets for the Burgers equation, Darcy flow, and Navier-Stokes equation.
 
@@ -38,10 +53,10 @@ The data generation configuration can be found in the paper.
 The datasets are given in the form of matlab file. They can be loaded with the scripts provided in utilities.py. 
 Each data file is loaded as a tensor. The first index is the samples; the rest of indices are the discretization.
 For example, 
-- `Burgers_R10.mat` contains the dataset for the Burgers equation. It is of the shape [1000, 8192], 
-meaning it has 1000 training samples on a grid of 8192.
-- `NavierStokes_V1e-3_N5000_T50.mat` contains the dataset for the 2D Navier-Stokes equation. It is of the shape [5000, 64, 64, 50], 
-meaning it has 5000 training samples on a grid of (64, 64) with 50 time steps.
+- `Burgers_R10.mat` contains the dataset for the Burgers equation. It is of the shape `[1000, 8192]`, 
+meaning it has `1000` training samples on a grid of `8192`.
+- `NavierStokes_V1e-3_N5000_T50.mat` contains the dataset for the 2D Navier-Stokes equation. It is of the shape `[5000, 64, 64, 50]`, 
+meaning it has `5000` training samples on a grid of `(64, 64)` with `50` time steps.
 
 We also provide the data generation scripts at `data_generation`.
 
