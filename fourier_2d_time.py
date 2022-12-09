@@ -15,9 +15,9 @@ np.random.seed(0)
 # fourier layer
 ################################################################
 
-class SpectralConv2d_fast(nn.Module):
+class SpectralConv2d(nn.Module):
     def __init__(self, in_channels, out_channels, modes1, modes2):
-        super(SpectralConv2d_fast, self).__init__()
+        super(SpectralConv2d, self).__init__()
 
         """
         2D Fourier layer. It does FFT, linear transform, and Inverse FFT.    
@@ -77,10 +77,10 @@ class FNO2d(nn.Module):
         self.fc0 = nn.Linear(12, self.width)
         # input channel is 12: the solution of the previous 10 timesteps + 2 locations (u(t-10, x, y), ..., u(t-1, x, y),  x, y)
 
-        self.conv0 = SpectralConv2d_fast(self.width, self.width, self.modes1, self.modes2)
-        self.conv1 = SpectralConv2d_fast(self.width, self.width, self.modes1, self.modes2)
-        self.conv2 = SpectralConv2d_fast(self.width, self.width, self.modes1, self.modes2)
-        self.conv3 = SpectralConv2d_fast(self.width, self.width, self.modes1, self.modes2)
+        self.conv0 = SpectralConv2d(self.width, self.width, self.modes1, self.modes2)
+        self.conv1 = SpectralConv2d(self.width, self.width, self.modes1, self.modes2)
+        self.conv2 = SpectralConv2d(self.width, self.width, self.modes1, self.modes2)
+        self.conv3 = SpectralConv2d(self.width, self.width, self.modes1, self.modes2)
         self.w0 = nn.Conv2d(self.width, self.width, 1)
         self.w1 = nn.Conv2d(self.width, self.width, 1)
         self.w2 = nn.Conv2d(self.width, self.width, 1)
@@ -261,25 +261,4 @@ for ep in range(epochs):
     print(ep, t2 - t1, train_l2_step / ntrain / (T / step), train_l2_full / ntrain, test_l2_step / ntest / (T / step),
           test_l2_full / ntest)
 # torch.save(model, path_model)
-
-# pred = torch.zeros(test_u.shape)
-# index = 0
-# test_loader = torch.utils.data.DataLoader(torch.utils.data.TensorDataset(test_a, test_u), batch_size=1, shuffle=False)
-# with torch.no_grad():
-#     for x, y in test_loader:
-#         test_l2 = 0;
-#         x, y = x.cuda(), y.cuda()
-#
-#         out = model(x)
-#         out = y_normalizer.decode(out)
-#         pred[index] = out
-#
-#         test_l2 += myloss(out.view(1, -1), y.view(1, -1)).item()
-#         print(index, test_l2)
-#         index = index + 1
-
-# scipy.io.savemat('pred/'+path+'.mat', mdict={'pred': pred.cpu().numpy()})
-
-
-
 
