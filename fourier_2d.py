@@ -51,6 +51,18 @@ class SpectralConv2d(nn.Module):
         x = torch.fft.irfft2(out_ft, s=(x.size(-2), x.size(-1)))
         return x
 
+class MLP(nn.Module):
+    def __init__(self, in_channels, out_channels, mid_channels):
+        super(MLP, self).__init__()
+        self.mlp1 = nn.Conv2d(in_channels, mid_channels, 1)
+        self.mlp2 = nn.Conv2d(mid_channels, out_channels, 1)
+
+    def forward(self, x):
+        x = self.mlp1(x)
+        x = F.gelu(x)
+        x = self.mlp2(x)
+        return x
+
 class FNO2d(nn.Module):
     def __init__(self, modes1, modes2,  width):
         super(FNO2d, self).__init__()
@@ -72,51 +84,55 @@ class FNO2d(nn.Module):
         self.modes2 = modes2
         self.width = width
         self.padding = 9 # pad the domain if input is non-periodic
-        self.fc0 = nn.Linear(3, self.width) # input channel is 3: (a(x, y), x, y)
 
+        self.p = nn.Linear(3, self.width) # input channel is 3: (a(x, y), x, y)
         self.conv0 = SpectralConv2d(self.width, self.width, self.modes1, self.modes2)
         self.conv1 = SpectralConv2d(self.width, self.width, self.modes1, self.modes2)
         self.conv2 = SpectralConv2d(self.width, self.width, self.modes1, self.modes2)
         self.conv3 = SpectralConv2d(self.width, self.width, self.modes1, self.modes2)
+        self.mlp0 = MLP(self.width, self.width, self.width)
+        self.mlp1 = MLP(self.width, self.width, self.width)
+        self.mlp2 = MLP(self.width, self.width, self.width)
+        self.mlp3 = MLP(self.width, self.width, self.width)
         self.w0 = nn.Conv2d(self.width, self.width, 1)
         self.w1 = nn.Conv2d(self.width, self.width, 1)
         self.w2 = nn.Conv2d(self.width, self.width, 1)
         self.w3 = nn.Conv2d(self.width, self.width, 1)
-
-        self.fc1 = nn.Linear(self.width, 128)
-        self.fc2 = nn.Linear(128, 1)
+        self.q = MLP(self.width, 1, self.width * 4) # output channel is 1: u(x, y)
 
     def forward(self, x):
         grid = self.get_grid(x.shape, x.device)
         x = torch.cat((x, grid), dim=-1)
-        x = self.fc0(x)
+        x = self.p(x)
         x = x.permute(0, 3, 1, 2)
         x = F.pad(x, [0,self.padding, 0,self.padding])
 
         x1 = self.conv0(x)
+        x1 = self.mlp0(x1)
         x2 = self.w0(x)
         x = x1 + x2
         x = F.gelu(x)
 
         x1 = self.conv1(x)
+        x1 = self.mlp1(x1)
         x2 = self.w1(x)
         x = x1 + x2
         x = F.gelu(x)
 
         x1 = self.conv2(x)
+        x1 = self.mlp2(x1)
         x2 = self.w2(x)
         x = x1 + x2
         x = F.gelu(x)
 
         x1 = self.conv3(x)
+        x1 = self.mlp3(x1)
         x2 = self.w3(x)
         x = x1 + x2
 
         x = x[..., :-self.padding, :-self.padding]
+        x = self.q(x)
         x = x.permute(0, 2, 3, 1)
-        x = self.fc1(x)
-        x = F.gelu(x)
-        x = self.fc2(x)
         return x
     
     def get_grid(self, shape, device):
