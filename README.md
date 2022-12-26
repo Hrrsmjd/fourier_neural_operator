@@ -27,7 +27,7 @@ As a result the code is about 30% faster.
 - Previous version for [PyTorch 1.6.0](https://pytorch.org/) is avaiable at `FNO-torch.1.6`.
 
 ## Major Updates:
-- Dec 2022: Add an MLP per layer. Add InstanceNorm layers for fourier_2d_time.
+- Dec 2022: Add an MLP per layer. Add InstanceNorm layers for fourier_2d_time. Add Cosine Annealing scheduler.
 - Aug 2021: use GeLU instead of ReLU.
 - Jan 2021: remove unnecessary BatchNorm layers.
 

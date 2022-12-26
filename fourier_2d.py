@@ -154,10 +154,8 @@ ntest = 100
 
 batch_size = 20
 learning_rate = 0.001
-
 epochs = 500
-step_size = 100
-gamma = 0.5
+iterations = epochs*(ntrain//batch_size)
 
 modes = 12
 width = 32
@@ -197,7 +195,7 @@ model = FNO2d(modes, modes, width).cuda()
 print(count_params(model))
 
 optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate, weight_decay=1e-4)
-scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=step_size, gamma=gamma)
+scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=iterations)
 
 myloss = LpLoss(size_average=False)
 y_normalizer.cuda()
@@ -217,9 +215,8 @@ for ep in range(epochs):
         loss.backward()
 
         optimizer.step()
+        scheduler.step()
         train_l2 += loss.item()
-
-    scheduler.step()
 
     model.eval()
     test_l2 = 0.0

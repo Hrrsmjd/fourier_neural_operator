@@ -148,10 +148,8 @@ s = h
 
 batch_size = 20
 learning_rate = 0.001
-
 epochs = 500
-step_size = 50
-gamma = 0.5
+iterations = epochs*(ntrain//batch_size)
 
 modes = 16
 width = 64
@@ -184,7 +182,7 @@ print(count_params(model))
 # training and evaluation
 ################################################################
 optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate, weight_decay=1e-4)
-scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=step_size, gamma=gamma)
+scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=iterations)
 
 myloss = LpLoss(size_average=False)
 for ep in range(epochs):
@@ -203,10 +201,10 @@ for ep in range(epochs):
         l2.backward() # use the l2 relative loss
 
         optimizer.step()
+        scheduler.step()
         train_mse += mse.item()
         train_l2 += l2.item()
 
-    scheduler.step()
     model.eval()
     test_l2 = 0.0
     with torch.no_grad():

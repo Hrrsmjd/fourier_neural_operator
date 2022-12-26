@@ -171,31 +171,23 @@ modes = 8
 width = 20
 
 batch_size = 10
-batch_size2 = batch_size
-
-epochs = 500
 learning_rate = 0.001
-scheduler_step = 100
-scheduler_gamma = 0.5
+epochs = 500
+iterations = epochs*(ntrain//batch_size)
 
-print(epochs, learning_rate, scheduler_step, scheduler_gamma)
-
-path = 'test'
-# path = 'ns_fourier_V100_N'+str(ntrain)+'_ep' + str(epochs) + '_m' + str(modes) + '_w' + str(width)
+path = 'ns_fourier_3d_N'+str(ntrain)+'_ep' + str(epochs) + '_m' + str(modes) + '_w' + str(width)
 path_model = 'model/'+path
 path_train_err = 'results/'+path+'train.txt'
 path_test_err = 'results/'+path+'test.txt'
 path_image = 'image/'+path
 
-
 runtime = np.zeros(2, )
 t1 = default_timer()
-
 
 sub = 1
 S = 64 // sub
 T_in = 10
-T = 40
+T = 40 # T=40 for V1e-3; T=20 for V1e-4; T=10 for V1e-5;
 
 ################################################################
 # load data
@@ -237,12 +229,9 @@ device = torch.device('cuda')
 # training and evaluation
 ################################################################
 model = FNO3d(modes, modes, modes, width).cuda()
-# model = torch.load('model/ns_fourier_V100_N1000_ep100_m8_w20')
-
 print(count_params(model))
 optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate, weight_decay=1e-4)
-scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=scheduler_step, gamma=scheduler_gamma)
-
+scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=iterations)
 
 myloss = LpLoss(size_average=False)
 y_normalizer.cuda()
@@ -266,10 +255,9 @@ for ep in range(epochs):
         l2.backward()
 
         optimizer.step()
+        scheduler.step()
         train_mse += mse.item()
         train_l2 += l2.item()
-
-    scheduler.step()
 
     model.eval()
     test_l2 = 0.0
@@ -288,7 +276,6 @@ for ep in range(epochs):
     t2 = default_timer()
     print(ep, t2-t1, train_mse, train_l2, test_l2)
 # torch.save(model, path_model)
-
 
 pred = torch.zeros(test_u.shape)
 index = 0
