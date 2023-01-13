@@ -63,7 +63,7 @@ class SpectralConv1d(nn.Module):
         print(f'Complex mul1d shape: {self.compl_mul1d(x_ft[0:1, :, :self.modes], self.weights).shape}')
         out_ft[:, :, :self.modes] = self.compl_mul1d(x_ft[:, :, :self.modes], self.weights)
         print(f'After linear trasnformation: {out_ft.shape}')
-        print(f'{out_ft[0, 0, :]}')
+        # print(f'{out_ft[0, 0, :]}')
 
         #Return to physical space
         x = torch.fft.irfft(out_ft, n=x.size(-1))
