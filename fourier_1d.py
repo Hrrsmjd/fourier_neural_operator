@@ -55,19 +55,19 @@ class SpectralConv1d(nn.Module):
         batchsize = x.shape[0]
         # Fourier transformation
         x_ft = torch.fft.rfft(x)
-        print(f'After FFT: {x_ft.shape}')
+        # print(f'After FFT: {x_ft.shape}')
 
         # Multiply relevant Fourier modes
         out_ft = torch.zeros(batchsize, self.out_channels, x.size(-1)//2 + 1,  device=x.device, dtype=torch.cfloat)
-        print(f'x_ft[0, :, :self.modes]: {x_ft[0:1, :, :self.modes].shape}')
-        print(f'Complex mul1d shape: {self.compl_mul1d(x_ft[0:1, :, :self.modes], self.weights).shape}')
+        # print(f'x_ft[0, :, :self.modes]: {x_ft[0:1, :, :self.modes].shape}')
+        # print(f'Complex mul1d shape: {self.compl_mul1d(x_ft[0:1, :, :self.modes], self.weights).shape}')
         out_ft[:, :, :self.modes] = self.compl_mul1d(x_ft[:, :, :self.modes], self.weights)
-        print(f'After linear trasnformation: {out_ft.shape}')
+        # print(f'After linear trasnformation: {out_ft.shape}')
         # print(f'{out_ft[0, 0, :]}')
 
         #Return to physical space
         x = torch.fft.irfft(out_ft, n=x.size(-1))
-        print(f'After iFFT: {x.shape}')
+        # print(f'After iFFT: {x.shape}')
         return x
 
 
@@ -127,23 +127,23 @@ class FNO1d(nn.Module):
 
     def forward(self, x):
         grid = self.get_grid(x.shape, x.device)
-        print(grid.shape)
-        print(f'x_shape:{x.shape}')
+        # print(grid.shape)
+        # print(f'x_shape:{x.shape}')
         x = torch.cat((x, grid), dim=-1)
-        print(f'x_shape:{x.shape}')
+        # print(f'x_shape:{x.shape}')
         x = self.p(x)
-        print(f'x_shape:{x.shape}')
+        # print(f'x_shape:{x.shape}')
         x = x.permute(0, 2, 1)
-        print(f'x_shape:{x.shape}')
+        # print(f'x_shape:{x.shape}')
         
         # x = F.pad(x, [0,self.padding]) # pad the domain if input is non-periodic
 
         x1 = self.conv0(x)
-        print(f'x1_shape:{x1.shape}')
+        # print(f'x1_shape:{x1.shape}')
         x1 = self.mlp0(x1)
-        print(f'x1_shape:{x1.shape}')
+        # print(f'x1_shape:{x1.shape}')
         x2 = self.w0(x)
-        print(f'x2_shape:{x2.shape}')
+        # print(f'x2_shape:{x2.shape}')
         x = x1 + x2
         x = F.gelu(x)
 
