@@ -273,9 +273,11 @@ width = 64
 # Data is of the shape (number of samples, grid size)
 dataloader = MatReader('data/burgers_data_R10.mat')
 x_data = dataloader.read_field('a')[:,::sub]
-# print(x_data.shape)
+print(x_data.shape)
+print(x_data.shape[0])
 y_data = dataloader.read_field('u')[:,::sub]
-# print(y_data.shape)
+print(y_data.shape)
+print(y_data.shape[0])
 
 x_train = x_data[:ntrain,:]
 y_train = y_data[:ntrain,:]
