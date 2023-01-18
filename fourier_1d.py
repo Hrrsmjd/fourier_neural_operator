@@ -54,8 +54,11 @@ class SpectralConv1d(nn.Module):
         """
         batchsize = x.shape[0]
         # Fourier transformation
+        # print(f'Before FFT: {x.shape}')
         x_ft = torch.fft.rfft(x)
         # print(f'After FFT: {x_ft.shape}')
+
+        # print(f'Weigths shape: {self.weights.shape}')
 
         # Multiply relevant Fourier modes
         out_ft = torch.zeros(batchsize, self.out_channels, x.size(-1)//2 + 1,  device=x.device, dtype=torch.cfloat)
@@ -108,7 +111,7 @@ class FNO1d(nn.Module):
         self.width = width
         self.padding = 8 # pad the domain if input is non-periodic
 
-        self.p = nn.Linear(2, self.width) # input channel_dim is 2: (u0(x), x)
+        self.p = nn.Linear(1, self.width) # input channel_dim is 2: (u0(x), x)
 
         self.conv0 = SpectralConv1d(self.width, self.width, self.modes1)
         self.conv1 = SpectralConv1d(self.width, self.width, self.modes1)
@@ -126,15 +129,16 @@ class FNO1d(nn.Module):
         self.q = MLP(self.width, 1, self.width*2)  # output channel_dim is 1: u1(x)
 
     def forward(self, x):
-        grid = self.get_grid(x.shape, x.device)
+        # grid = self.get_grid(x.shape, x.device)
         # print(grid.shape)
         # print(f'x_shape:{x.shape}')
-        x = torch.cat((x, grid), dim=-1)
-        # print(f'x_shape:{x.shape}')
+        # x = torch.cat((x, grid), dim=-1)
+        x = x.permute(0, 2, 1) ##
+        # print(f'Before P x_shape:{x.shape}')
         x = self.p(x)
-        # print(f'x_shape:{x.shape}')
+        # print(f'After P x_shape:{x.shape}')
         x = x.permute(0, 2, 1)
-        # print(f'x_shape:{x.shape}')
+        # print(f'After permute x_shape:{x.shape}')
         
         # x = F.pad(x, [0,self.padding]) # pad the domain if input is non-periodic
 
@@ -175,120 +179,101 @@ class FNO1d(nn.Module):
         gridx = gridx.reshape(1, size_x, 1).repeat([batchsize, 1, 1])
         return gridx.to(device)
 
-# class FNO1d(nn.Module):
-#     def __init__(self, modes, width, time_future, time_history):
-#         super(FNO1d, self).__init__()
-
-#         """
-#         The overall network. It contains 4 layers of the Fourier layer.
-#         1. Lift the input to the desire channel dimension by self.fc0 .
-#         2. 4 layers of the integral operators u' = (W + K)(u).
-#             W defined by self.w; K defined by self.conv .
-#         3. Project from the channel space to the output space by self.fc1 and self.fc2 .
-
-#         input: a driving function observed at T timesteps + 1 locations (u(1, x), ..., u(T, x),  x).
-#         input shape: (batchsize, x=s, c=2)
-#         output: the solution of a later timestep
-#         output shape: (batchsize, x=s, c=1)
-#         """
-#         self.modes = modes
-#         self.width = width
-#         self.time_future = time_future
-#         self.time_history = time_history
-#         self.fc0 = nn.Linear(self.time_history+1, self.width)
-
-#         self.conv0 = SpectralConv1d(self.width, self.width, self.modes)
-#         self.conv1 = SpectralConv1d(self.width, self.width, self.modes)
-#         self.conv2 = SpectralConv1d(self.width, self.width, self.modes)
-#         self.conv3 = SpectralConv1d(self.width, self.width, self.modes)
-#         self.w0 = nn.Conv1d(self.width, self.width, 1)
-#         self.w1 = nn.Conv1d(self.width, self.width, 1)
-#         self.w2 = nn.Conv1d(self.width, self.width, 1)
-#         self.w3 = nn.Conv1d(self.width, self.width, 1)
-
-#         self.fc1 = nn.Linear(self.width, 128)
-#         self.fc2 = nn.Linear(128, self.time_future)
-
-    # def forward(self, u):
-    #     grid = self.get_grid(u.shape, u.device)
-    #     x = torch.cat((u, grid), dim=-1)
-    #     x = self.fc0(x)
-    #     x = x.permute(0, 2, 1)
-
-    #     x1 = self.conv0(x)
-    #     x2 = self.w0(x)
-    #     x = x1 + x2
-    #     x = F.gelu(x)
-
-    #     x1 = self.conv1(x)
-    #     x2 = self.w1(x)
-    #     x = x1 + x2
-    #     x = F.gelu(x)
-
-    #     x1 = self.conv2(x)
-    #     x2 = self.w2(x)
-    #     x = x1 + x2
-    #     x = F.gelu(x)
-
-    #     x1 = self.conv3(x)
-    #     x2 = self.w3(x)
-    #     x = x1 + x2
-
-    #     x = x.permute(0, 2, 1)
-    #     x = self.fc1(x)
-    #     x = F.gelu(x)
-    #     x = self.fc2(x)
-    #     return x
-
-    # def get_grid(self, shape, device):
-    #     batchsize, size_x = shape[0], shape[1]
-    #     gridx = torch.tensor(np.linspace(0, 1, size_x), dtype=torch.float)
-    #     gridx = gridx.reshape(1, size_x, 1).repeat([batchsize, 1, 1])
-    #     return gridx.to(device)
-
 
 ################################################################
 #  configurations
 ################################################################
-ntrain = 1000
-ntest = 100
+# ntrain = 1000
+# ntest = 100
 
-sub = 2**3 #subsampling rate
-h = 2**13 // sub #total grid size divided by the subsampling rate
-s = h
+# sub = 2**3 #subsampling rate
+# h = 2**13 // sub #total grid size divided by the subsampling rate
+# s = h
 
-batch_size = 20
+batch_size = 64
 learning_rate = 0.001
 # epochs = 500
-epochs = 2
-iterations = epochs*(ntrain//batch_size)
+epochs = 20
+# iterations = epochs*(ntrain//batch_size)
 
-modes = 16
+modes = 1
 width = 64
 
 ################################################################
 # read data
 ################################################################
 
-# Data is of the shape (number of samples, grid size)
-dataloader = MatReader('data/burgers_data_R10.mat')
-x_data = dataloader.read_field('a')[:,::sub]
-print(x_data.shape)
-print(x_data.shape[0])
-y_data = dataloader.read_field('u')[:,::sub]
-print(y_data.shape)
-print(y_data.shape[0])
+# # Data is of the shape (number of samples, grid size)
+# dataloader = MatReader('data/burgers_data_R10.mat')
+# x_data = dataloader.read_field('a')[:,::sub]
+# print(x_data.shape)
+# print(x_data.shape[0])
+# y_data = dataloader.read_field('u')[:,::sub]
+# print(y_data.shape)
+# print(y_data.shape[0])
 
-x_train = x_data[:ntrain,:]
-y_train = y_data[:ntrain,:]
-x_test = x_data[-ntest:,:]
-y_test = y_data[-ntest:,:]
+# x_train = x_data[:ntrain,:]
+# y_train = y_data[:ntrain,:]
+# x_test = x_data[-ntest:,:]
+# y_test = y_data[-ntest:,:]
 
-x_train = x_train.reshape(ntrain,s,1)
-x_test = x_test.reshape(ntest,s,1)
+# x_train = x_train.reshape(ntrain,s,1)
+# x_test = x_test.reshape(ntest,s,1)
 
-train_loader = torch.utils.data.DataLoader(torch.utils.data.TensorDataset(x_train, y_train), batch_size=batch_size, shuffle=True)
-test_loader = torch.utils.data.DataLoader(torch.utils.data.TensorDataset(x_test, y_test), batch_size=batch_size, shuffle=False)
+# train_loader = torch.utils.data.DataLoader(torch.utils.data.TensorDataset(x_train, y_train), batch_size=batch_size, shuffle=True)
+# test_loader = torch.utils.data.DataLoader(torch.utils.data.TensorDataset(x_test, y_test), batch_size=batch_size, shuffle=False)
+
+## Simple Harmonic Oscillator
+def simple_harmonic_oscillator(k: int, m: int, x0: int, v0: int, t: np.array) -> np.array:
+    x = x0 * np.cos(np.sqrt(k / m) * t) + v0 / np.sqrt(k / m) * np.sin(np.sqrt(k / m) * t)
+    return x    
+
+## Number of Samples 
+n = 100000
+## Output
+data_t = []
+data_x = []
+
+# k = np.random.randint(1, 100)
+# m = np.random.randint(1, 100)
+# x0 = np.random.normal(0, 10)
+# v0 = np.random.normal(0, 10)
+k = 1
+m = 1000
+x0 = 0.1
+v0 = 0.1
+
+## Generate Data
+for _ in range(n):
+    # k = np.random.randint(1, 100)
+    # m = np.random.randint(1, 100)
+    # x0 = np.random.normal(0, 10)
+    # v0 = np.random.normal(0, 10)
+    
+    t = np.random.uniform(0, 100)
+    data_t.append(t)
+    data_x.append(simple_harmonic_oscillator(k, m, x0, v0, t))
+
+data_t = np.array(torch.tensor(data_t).float().unsqueeze(1).unsqueeze(1))
+data_x = np.array(torch.tensor(data_x).float().unsqueeze(1).unsqueeze(1))
+
+## Data Loader
+from torch.utils.data import Dataset, DataLoader
+import pandas as pd
+
+class CustomDataset(Dataset):
+    def __init__(self, t, x):
+        self.t = t
+        self.x = x
+
+    def __len__(self):
+        return len(self.t)
+    
+    def __getitem__(self, index):
+        return self.t[index], self.x[index]
+
+data = CustomDataset(data_t, data_x)
+train_loader = DataLoader(data, batch_size=batch_size, shuffle=True)
 
 # model
 # model = FNO1d(modes, width).cuda()
@@ -298,64 +283,91 @@ print(count_params(model))
 ################################################################
 # training and evaluation
 ################################################################
-optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate, weight_decay=1e-4)
-scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=iterations)
+optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate) #, weight_decay=1e-4)
+# scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=iterations)
 
-myloss = LpLoss(size_average=False)
-for ep in range(epochs):
-    model.train()
-    t1 = default_timer()
-    train_mse = 0
-    train_l2 = 0
-    for x, y in train_loader:
-        # x, y = x.cuda(), y.cuda()
-        x, y = x.cpu(), y.cpu()
+# myloss = LpLoss(size_average=False)
+myloss = nn.MSELoss()
 
+## Training Loop
+def train_loop(dataloader, model, loss_function, optimizer):
+    size = len(dataloader.dataset)
+    for batch, (t, x) in enumerate(dataloader):
+        # Compute prediction and loss
+        pred = model(t)
+        loss = loss_function(pred, x)
+
+        # Backpropagation
         optimizer.zero_grad()
-        out = model(x)
-
-        mse = F.mse_loss(out.view(batch_size, -1), y.view(batch_size, -1), reduction='mean')
-        l2 = myloss(out.view(batch_size, -1), y.view(batch_size, -1))
-        l2.backward() # use the l2 relative loss
-
+        loss.backward()
         optimizer.step()
-        scheduler.step()
-        train_mse += mse.item()
-        train_l2 += l2.item()
 
-    model.eval()
-    test_l2 = 0.0
-    with torch.no_grad():
-        for x, y in test_loader:
-            # x, y = x.cuda(), y.cuda()
-            x, y = x.cpu(), y.cpu()
+        if batch % 100 == 0:
+            loss, current = loss.item(), batch * len(t)
+            print(f"loss: {loss:>7f}  [{current:>5d}/{size:>5d}]")
 
-            out = model(x)
-            test_l2 += myloss(out.view(batch_size, -1), y.view(batch_size, -1)).item()
+for t in range(epochs):
+    print(f"Epoch {t+1}\n-------------------------------")
+    train_loop(train_loader, model, myloss, optimizer)
+print("Done!")
 
-    train_mse /= len(train_loader)
-    train_l2 /= ntrain
-    test_l2 /= ntest
+t_test= torch.from_numpy(np.linspace(0, 100, 100)).float().unsqueeze(0).unsqueeze(0)
+model(t_test.permute(2, 1, 0)).detach()
 
-    t2 = default_timer()
-    print(ep, t2-t1, train_mse, train_l2, test_l2)
+# for ep in range(epochs):
+#     model.train()
+#     t1 = default_timer()
+#     train_mse = 0
+#     train_l2 = 0
+#     for x, y in train_loader:
+#         # x, y = x.cuda(), y.cuda()
+#         x, y = x.cpu(), y.cpu()
 
-# torch.save(model, 'model/ns_fourier_burgers')
-pred = torch.zeros(y_test.shape)
-index = 0
-test_loader = torch.utils.data.DataLoader(torch.utils.data.TensorDataset(x_test, y_test), batch_size=1, shuffle=False)
-with torch.no_grad():
-    for x, y in test_loader:
-        test_l2 = 0
-        # x, y = x.cuda(), y.cuda()
-        x, y = x.cpu(), y.cpu()
+#         optimizer.zero_grad()
+#         out = model(x)
 
-        out = model(x).view(-1)
-        pred[index] = out
+#         mse = F.mse_loss(out.view(batch_size, -1), y.view(batch_size, -1), reduction='mean')
+#         l2 = myloss(out.view(batch_size, -1), y.view(batch_size, -1))
+#         l2.backward() # use the l2 relative loss
 
-        test_l2 += myloss(out.view(1, -1), y.view(1, -1)).item()
-        print(index, test_l2)
-        index = index + 1
+#         optimizer.step()
+#         scheduler.step()
+#         train_mse += mse.item()
+#         train_l2 += l2.item()
 
-scipy.io.savemat('pred/burger_test.mat', mdict={'pred': pred.cpu().numpy()})
-np.savetxt('pred/burger_test.csv', pred.cpu().numpy(), delimiter=",")
+#     model.eval()
+#     test_l2 = 0.0
+#     with torch.no_grad():
+#         for x, y in test_loader:
+#             # x, y = x.cuda(), y.cuda()
+#             x, y = x.cpu(), y.cpu()
+
+#             out = model(x)
+#             test_l2 += myloss(out.view(batch_size, -1), y.view(batch_size, -1)).item()
+
+#     train_mse /= len(train_loader)
+#     train_l2 /= ntrain
+#     test_l2 /= ntest
+
+#     t2 = default_timer()
+#     print(ep, t2-t1, train_mse, train_l2, test_l2)
+
+# # torch.save(model, 'model/ns_fourier_burgers')
+# pred = torch.zeros(y_test.shape)
+# index = 0
+# test_loader = torch.utils.data.DataLoader(torch.utils.data.TensorDataset(x_test, y_test), batch_size=1, shuffle=False)
+# with torch.no_grad():
+#     for x, y in test_loader:
+#         test_l2 = 0
+#         # x, y = x.cuda(), y.cuda()
+#         x, y = x.cpu(), y.cpu()
+
+#         out = model(x).view(-1)
+#         pred[index] = out
+
+#         test_l2 += myloss(out.view(1, -1), y.view(1, -1)).item()
+#         print(index, test_l2)
+#         index = index + 1
+
+# scipy.io.savemat('pred/burger_test.mat', mdict={'pred': pred.cpu().numpy()})
+# np.savetxt('pred/burger_test.csv', pred.cpu().numpy(), delimiter=",")
